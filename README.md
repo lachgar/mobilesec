@@ -1,194 +1,165 @@
-# 🛡️ Mobile Security Scanning Platform
-
-A comprehensive microservices-based security platform for analyzing Android APK files. Powered by AI and Machine Learning to detect vulnerabilities and provide intelligent fix suggestions.
-
+🛡️ MobileSec — Android APK Vulnerability Analysis and Remediation Platform
+MobileSec is a microservices-based platform for static security analysis of Android APK files. It combines specialized vulnerability detectors, a LightGBM-based prioritization service, AI-assisted remediation suggestions, and multi-format reporting to support Android security assessment and DevSecOps workflows.
+> **Note**: MobileSec is mainly a static-analysis platform. AI-assisted remediation and ML-based prioritization are decision-support components; their outputs should be reviewed by a security analyst before being used in production.
 ---
-
-## 🎯 Features
-
-### Core Security Scanning
-- **📱 APK Analysis** - Deep static analysis of Android applications
-- **🔐 Cryptographic Checks** - Detects weak encryption, insecure algorithms, and crypto misuse
-- **🔑 Secret Detection** - Finds exposed API keys, passwords, and sensitive credentials
-- **🌐 Network Analysis** - Identifies insecure connections, SSL/TLS issues, and data leaks
-
-### AI-Powered Intelligence
-- **🤖 LightGBM ML Model** - Prioritizes vulnerabilities by criticality with confidence scores
-- **✨ AI Fix Suggestions** - Generates detailed, actionable remediation steps via OpenRouter API
-- **📊 Smart Ranking** - Automatically ranks vulnerabilities from most to least critical
-- **💡 Code Patches** - Provides complete Java/Kotlin code fixes with proper imports
-
-### Reporting & Visualization
-- **📄 PDF Reports** - Professional, branded security reports with executive summaries
-- **📈 Dashboard** - Real-time statistics and vulnerability breakdowns
-- **🎨 Interactive UI** - Modern React-based frontend with dark mode
-- **🔍 Detailed Findings** - Drill down into each vulnerability with file/line references
-
+🎯 Features
+Core Security Scanning
+APK analysis — Static analysis of Android applications and extraction of manifest, permissions, resources, endpoints, and metadata.
+Cryptographic checks — Detection of weak algorithms, insecure modes, hardcoded keys, unsafe IVs, and crypto misuse patterns.
+Secret detection — Identification of exposed API keys, tokens, passwords, private keys, and other sensitive strings.
+Network analysis — Detection of insecure endpoints, cleartext traffic, weak TLS configurations, and risky communication patterns.
+Prioritization and Remediation
+LightGBM-based prioritization — Predicts operational remediation categories and ranks findings with confidence scores.
+AI-assisted fix suggestions — Uses the OpenRouter API to generate explanations, mitigation guidance, and Java/Kotlin-oriented remediation examples.
+Smart ranking — Helps analysts focus first on the findings with the highest remediation priority.
+Code-oriented guidance — Provides suggested patches and implementation guidance that should be reviewed before use.
+Reporting and Visualization
+PDF reports — Human-readable reports with executive summaries and detailed findings.
+JSON export — Machine-readable output for automation and downstream processing.
+SARIF export — Static-analysis output format suitable for DevSecOps and code-scanning workflows.
+Dashboard — Real-time scan status, vulnerability statistics, severity distribution, and scan history.
+Detailed findings — File paths, line references when available, vulnerability descriptions, and remediation hints.
 ---
-
-## 🏗️ Architecture
-
-### Microservices
-```
+🏗️ Architecture
+MobileSec is organized as a set of independently deployable services coordinated through Docker Compose, MongoDB, and Kafka.
+```text
 ┌─────────────┐
-│ CI-CONNECTOR│ (Port 3000) - Orchestrator & API Gateway
+│ FRONTEND    │ React/Vite dashboard
 └──────┬──────┘
        │
        ▼
 ┌─────────────┐
-│ APK-SCANNER │ (Port 5000) - Decompiles & extracts APK resources
+│ API GATEWAY │ / CI-CONNECTOR (Port 3000)
 └──────┬──────┘
        │
-   ┌───┴────┬────────────┬────────────┐
-   ▼        ▼            ▼            ▼
-┌──────┐ ┌──────┐ ┌──────────┐ ┌──────────┐
-│CRYPTO│ │SECRET│ │ NETWORK  │ │ ML-MODEL │
-│CHECK │ │HUNTER│ │INSPECTOR │ │(LightGBM)│
-└──┬───┘ └──┬───┘ └────┬─────┘ └────┬─────┘
-   │        │          │            │
-   └────────┴──────────┴────────────┘
-                  │
-                  ▼
-         ┌────────────────┐
-         │   REPORTGEN    │ (Port 3005) - PDF generation
-         └────────────────┘
-                  │
-                  ▼
-         ┌────────────────┐
-         │   FIXSUGGEST   │ (Port 8000) - AI suggestions
-         └────────────────┘
+       ▼
+┌─────────────┐
+│ APK-SCANNER │ (Port 5000) - APK preprocessing and artifact extraction
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│   KAFKA     │ Event-based orchestration
+└──────┬──────┘
+       │
+   ┌───┴────────┬──────────────┬──────────────┬──────────────┐
+   ▼            ▼              ▼              ▼
+┌────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+│CRYPTO  │  │SECRET    │  │NETWORK   │  │ ML-MODEL │
+│CHECK   │  │HUNTER    │  │INSPECTOR │  │LightGBM  │
+└───┬────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘
+    │            │             │             │
+    └────────────┴─────────────┴─────────────┘
+                         │
+                         ▼
+                  ┌────────────┐
+                  │  MongoDB   │ Persistent scan results
+                  └─────┬──────┘
+                        │
+          ┌─────────────┴─────────────┐
+          ▼                           ▼
+┌────────────────┐          ┌────────────────┐
+│   REPORTGEN    │          │   FIXSUGGEST   │
+│ PDF/JSON/SARIF │          │ AI suggestions │
+│   Port 3005    │          │   Port 8000    │
+└────────────────┘          └────────────────┘
 ```
-
-### Technology Stack
-- **Backend**: Node.js, Python (FastAPI, Flask), Java (Spring Boot)
-- **Frontend**: React, Vite
-- **ML**: LightGBM, scikit-learn
-- **AI**: OpenRouter API (Llama 3.2, Gemini, Amazon Nova)
-- **Database**: MongoDB
-- **Message Queue**: Apache Kafka
-- **Containerization**: Docker, Docker Compose
-
+Technology Stack
+Backend: Node.js, Python, FastAPI, Flask, Java/Spring Boot
+Frontend: React, Vite
+Machine learning: LightGBM, scikit-learn
+AI integration: OpenRouter API
+Database: MongoDB
+Messaging: Apache Kafka
+Containerization: Docker, Docker Compose
 ---
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Docker & Docker Compose
-- Node.js 18+ (for frontend development)
-- 8GB+ RAM
-- OpenRouter API key (for AI suggestions)
-
-### 1. Clone the Repository
+🚀 Quick Start
+Prerequisites
+Docker and Docker Compose
+Node.js 18+ for frontend development
+8 GB RAM or more recommended
+OpenRouter API key for AI-assisted remediation
+1. Clone the Repository
 ```bash
-git clone https://github.com/Imadait01/MobileSec.git
-cd MobileSec
+git clone https://github.com/lachgar/mobilesec.git
+cd mobilesec
+git checkout dev
 ```
-
-### 2. Configure Environment Variables
+2. Configure Environment Variables
 ```bash
-# Backend configuration
 cd backend
 cp .env.example .env
-
-# Edit .env and add your OpenRouter API key:
-# OPENROUTER_API_KEY=sk-or-v1-your-key-here
 ```
-
-### 3. Start All Services
+Edit `.env` and add the required values. Do not commit real secrets to the repository.
+```env
+OPENROUTER_API_KEY=your_openrouter_api_key
+OPENROUTER_MODEL=meta-llama/llama-3.2-3b-instruct:free
+MONGODB_URI=mongodb://mongodb:27017/mobilesec
+KAFKA_BROKERS=kafka:9092
+```
+3. Start Backend Services
 ```bash
-# Start backend microservices
 cd backend
-docker-compose up -d
-
-# Start frontend (in a new terminal)
-cd ../frontend
-npm install
-npm start
+docker compose up -d --build
 ```
-
-### 4. Access the Platform
-- **Frontend**: http://localhost:3006
-- **API Gateway**: http://localhost:3000
-- **FixSuggest API**: http://localhost:8000/docs
-- **ML Model API**: http://localhost:8001/docs
-- **MongoDB Express**: http://localhost:8081
-
----
-
-## 📖 Usage
-
-### Scanning an APK
-
-1. **Upload APK**
-   - Navigate to http://localhost:3006
-   - Click "Upload APK" or drag & drop your `.apk` file
-   - Wait for analysis to complete (~2-5 minutes)
-
-2. **View Results**
-   - Navigate to "Scans" to see all completed scans
-   - Click "View Details" to see vulnerability breakdown
-   - Each scan shows:
-     - Total vulnerabilities by category
-     - Severity distribution
-     - Security score
-
-3. **Get AI Fix Suggestions**
-   - Click "AI Suggestions" on a scan
-   - View ML-prioritized vulnerabilities (top 10 critical)
-   - Each suggestion includes:
-     - **ML Confidence Score** (LightGBM)
-     - **Detailed Analysis** (what's wrong and why)
-     - **Step-by-step Fix** (how to remediate)
-     - **Code Patches** (complete working code)
-
-4. **Generate PDF Report**
-   - Click "Download PDF" from scan details
-   - Get professional security report with all findings
-
----
-
-## 🔧 Configuration
-
-### OpenRouter API Setup
-
-The platform supports multiple AI models through OpenRouter:
-
-**Free Models:**
-- `meta-llama/llama-3.2-3b-instruct:free`
-- `mistralai/mistral-7b-instruct:free`
-
-**Paid Models (better quality):**
-- `google/gemini-pro-1.5` (~$0.02/scan)
-- `amazon/nova-lite-v1` (~$0.01/scan)
-
-To configure:
-```yaml
-# backend/docker-compose.yml
-services:
-  fixsuggest:
-    environment:
-      - OPENROUTER_API_KEY=sk-or-v1-your-key-here
-      - OPENROUTER_MODEL=meta-llama/llama-3.2-3b-instruct:free
-```
-
-Get your API key at: https://openrouter.ai/
-
-### Adjusting ML Suggestions Count
-
-To change the number of AI-generated suggestions (default: 10):
-
-```javascript
-// frontend/src/pages/FixSuggestions.jsx (line ~46)
-const response = await fixSuggestService.getMLPrioritizedSuggestions(scanId, 20); // Change 10 to 20
-```
-
----
-
-## 🧪 Development
-
-### Running Tests
+4. Start the Frontend
+Open a new terminal:
 ```bash
-# Backend tests
+cd frontend
+npm install
+npm run dev
+```
+5. Access the Platform
+Frontend: `http://localhost:3006`
+API Gateway / CI Connector: `http://localhost:3000`
+FixSuggest API: `http://localhost:8000/docs`
+ML Model API: `http://localhost:8001/docs`
+ReportGen Service: `http://localhost:3005`
+MongoDB Express: `http://localhost:8081`
+---
+📖 Usage
+Scan an APK
+Open the frontend dashboard.
+Upload or drag and drop an `.apk` file.
+Wait for the scan pipeline to complete.
+Open the scan details page to inspect vulnerabilities, categories, severity levels, and the security score.
+Review Prioritized Findings
+Open the AI suggestions or prioritization view.
+Review the LightGBM-ranked remediation categories.
+Inspect confidence scores and associated findings.
+Validate the suggested priority manually before applying remediation.
+Generate Reports
+From the scan details page, generate or download reports in the supported formats:
+PDF for human-readable reporting
+JSON for machine-readable processing
+SARIF for integration with static-analysis and DevSecOps workflows
+Use AI-Assisted Remediation
+For selected findings, FixSuggest can generate:
+a vulnerability explanation;
+remediation steps;
+Java/Kotlin-oriented code examples;
+suggested imports or configuration changes.
+Generated suggestions are intended to support analysts and developers. They should be reviewed, tested, and adapted before being merged into production code.
+---
+🔧 Configuration
+OpenRouter API Setup
+MobileSec uses OpenRouter to access LLM-based remediation suggestions.
+Example configuration in `.env`:
+```env
+OPENROUTER_API_KEY=your_openrouter_api_key
+OPENROUTER_MODEL=meta-llama/llama-3.2-3b-instruct:free
+```
+Do not store real API keys directly in `docker-compose.yml` or in committed source files. Use `.env` or your deployment secret manager.
+Adjusting the Number of AI Suggestions
+The number of generated suggestions can be changed in the frontend service call or backend configuration, depending on the deployed version. For example:
+```javascript
+const response = await fixSuggestService.getMLPrioritizedSuggestions(scanId, 20);
+```
+---
+🧪 Development
+Run Tests
+```bash
+# ReportGen tests
 cd backend/ReportGen
 npm test
 
@@ -196,80 +167,101 @@ npm test
 cd frontend
 npm test
 ```
-
-### Building for Production
+Build for Production
 ```bash
 # Frontend production build
 cd frontend
 npm run build
 
-# Docker production images
-cd backend
-docker-compose -f docker-compose.prod.yml up -d
+# Backend production containers
+cd ../backend
+docker compose -f docker-compose.prod.yml up -d --build
 ```
-
-### Debugging
+Debugging
 ```bash
-# View service logs
+# View logs
 docker logs fixsuggest --tail 100 --follow
 docker logs ml-model --tail 100 --follow
-
-# Access MongoDB
-docker exec -it mongodb mongosh -u admin -p securityplatform2024
+docker logs reportgen --tail 100 --follow
 
 # Restart a service
-docker-compose restart fixsuggest
+docker compose restart fixsuggest
+
+# Stop all services
+docker compose down
 ```
-
 ---
-
-## 📊 API Documentation
-
-### FixSuggest API
-- **Swagger UI**: http://localhost:8000/docs
-- **Endpoints**:
-  - `POST /api/v1/suggest/ml-priority` - ML-prioritized suggestions
-  - `GET /api/v1/suggest/scan/{scan_id}` - All suggestions for scan
-  - `GET /health` - Health check
-
-### ML Model API
-- **Swagger UI**: http://localhost:8001/docs
-- **Endpoints**:
-  - `POST /api/v1/prioritize` - Prioritize vulnerabilities
-  - `POST /api/v1/predict/{scan_id}` - Predict fix categories
-  - `GET /health` - Health check
-
+📊 API Documentation
+FixSuggest API
+Swagger UI: `http://localhost:8000/docs`
+Main endpoints:
+`POST /api/v1/suggest/ml-priority` — ML-prioritized suggestions
+`GET /api/v1/suggest/scan/{scan_id}` — Suggestions for a scan
+`GET /health` — Health check
+ML Model API
+Swagger UI: `http://localhost:8001/docs`
+Main endpoints:
+`POST /api/v1/prioritize` — Prioritize vulnerabilities
+`POST /api/v1/predict/{scan_id}` — Predict remediation categories
+`GET /health` — Health check
+ReportGen API
+Service: `http://localhost:3005`
+Supported outputs:
+PDF
+JSON
+SARIF
 ---
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
+🔁 Reproducibility
+For reproducible experiments, use a tagged release of the repository and keep the following information with each experiment:
+Git commit hash or release tag;
+Docker Compose configuration;
+APK dataset or benchmark name;
+scan date and service versions;
+exported JSON/SARIF reports;
+LightGBM model version and feature schema.
+Recommended release workflow:
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+A long-term archive such as Zenodo or Software Heritage can be used to preserve a citable snapshot of the code.
 ---
-
-## 📝 License
-
+⚠️ Security Notes
+Never commit real API keys, database passwords, JWT secrets, or private tokens.
+Revoke and rotate any key that has been accidentally exposed.
+Treat uploaded APKs and generated reports as potentially sensitive data.
+Review AI-generated remediation suggestions before applying them.
+Validate findings manually when results are used for audits, compliance, or production security decisions.
+---
+📌 Current Limitations
+MobileSec is mainly focused on static analysis in the current version.
+FixSuggest is an AI-assisted prototype and should not be treated as a fully validated automatic patching engine.
+LightGBM predictions are operational remediation categories, not expert OWASP labels.
+Raw finding counts may include duplicated strings, test keys, placeholders, or repeated resources before full semantic deduplication.
+Report export is implemented, but report-generation success rate should be measured in a dedicated validation experiment when used as a benchmark metric.
+---
+🤝 Contributing
+Fork the repository.
+Create a feature branch:
+```bash
+git checkout -b feature/amazing-feature
+```
+Commit your changes:
+```bash
+git commit -m "Add amazing feature"
+```
+Push to your branch:
+```bash
+git push origin feature/amazing-feature
+```
+Open a pull request.
+---
+📝 License
 This project is licensed under the MIT License.
-
 ---
-
-## 🙏 Acknowledgments
-
-- **OWASP MASVS** - Mobile Application Security Verification Standard
-- **OpenRouter** - Unified API for LLM access
-- **LightGBM** - Gradient boosting framework
-- **Google Gemini** - AI language model
-
-
-
-
-
-https://github.com/user-attachments/assets/9141fc02-2b81-488a-a930-d743aa27b95a
-
-
-
-
+🙏 Acknowledgments
+OWASP MASVS — Mobile Application Security Verification Standard
+OWASP MASTG — Mobile Application Security Testing Guide
+OpenRouter — Unified API access to LLMs
+LightGBM — Gradient boosting framework
+Androguard — Android application analysis toolkit
