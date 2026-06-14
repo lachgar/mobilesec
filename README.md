@@ -81,49 +81,8 @@ The ReportGen service supports:
 
 MobileSec follows a modular microservices architecture. Each major analysis task is handled by a dedicated service, which makes the platform easier to extend and evaluate.
 
-```text
-┌──────────────────┐
-│   Frontend UI    │
-│   React / Vite   │
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│ API Gateway /    │
-│ CI Connector     │  Port 3000
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│ APK Scanner      │  Port 5000
-│ APK preprocessing│
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│ Apache Kafka     │
-│ Event backbone   │
-└────────┬─────────┘
-         │
- ┌───────┼────────────┬──────────────┬──────────────┐
- ▼       ▼            ▼              ▼              ▼
-┌──────┐ ┌──────────┐ ┌────────────┐ ┌────────────┐ ┌─────────┐
-│Crypto│ │Secret    │ │Network     │ │ML Model    │ │MongoDB  │
-│Check │ │Hunter    │ │Inspector   │ │LightGBM    │ │Storage  │
-└──┬───┘ └────┬─────┘ └─────┬──────┘ └─────┬──────┘ └────┬────┘
-   │          │             │              │             │
-   └──────────┴─────────────┴──────────────┴─────────────┘
-                                │
-                  ┌─────────────┴─────────────┐
-                  ▼                           ▼
-        ┌──────────────────┐        ┌──────────────────┐
-        │ ReportGen        │        │ FixSuggest        │
-        │ PDF/JSON/SARIF   │        │ AI remediation    │
-        │ Port 3005        │        │ Port 8000         │
-        └──────────────────┘        └──────────────────┘
-```
+<img width="1024" height="1536" alt="Archi(1)" src="https://github.com/user-attachments/assets/b5bb7c7a-6afd-4713-8c31-7dae0876d5d0" />
 
----
 
 ## Technology Stack
 
