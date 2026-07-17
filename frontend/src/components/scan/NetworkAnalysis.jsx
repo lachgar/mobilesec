@@ -57,7 +57,7 @@ const NetworkAnalysis = ({ data }) => {
 
     // ── Data extraction ──────────────────────────────────────────────────────
     const analysis      = data?.analysis || {};
-    const rawIssues     = Array.isArray(analysis.issues) ? analysis.issues : [];
+    const rawIssues     = Array.isArray(analysis.security_issues) ? analysis.security_issues : (Array.isArray(analysis.issues) ? analysis.issues : []);
     const tlsAnalysis   = analysis.tls_analysis || {};
     const secScore      = analysis.security_score || {};
     const summary       = analysis.summary || {};
