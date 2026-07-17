@@ -1563,11 +1563,10 @@ export class ReportController {
         const doc = await mongoClient.getReportById(reportId);
         if (doc) {
           const d = doc as any; // Force cast
-          reportPath = d.report_path;
-          reportFormat = d.report_format;
-          // projectName isn't in DB doc? Schema in saveReport only has scanId.
-          // We can fetch scan doc to get project name? or default.
-          projectName = `Report-${reportId}`;
+          // MongoDB stores path as 'path' (not 'report_path') and format as 'format' (not 'report_format')
+          reportPath = d.path || d.report_path || null;
+          reportFormat = d.format || d.report_format || 'json';
+          projectName = d.projectName || d.project_name || `Report-${reportId}`;
         }
       }
 
@@ -1576,11 +1575,24 @@ export class ReportController {
         return;
       }
 
-      // If the client requests a PDF but we only have JSON, attempt on-demand conversion
-      // On-demand PDF conversion disabled. If client requested forcePdf, return 406.
-      if (String(req.query.forcePdf) === 'true' && reportFormat === 'json') {
-        res.status(406).json({ error: 'PDF generation is disabled on this server', reportId });
-        return;
+      // If the client requests a PDF but we only have JSON, generate PDF on-demand from the JSON data
+      if ((String(req.query.forcePdf) === 'true' || String(req.query.inline) === 'true') && reportFormat === 'json') {
+        try {
+          logger.info('On-demand PDF generation from JSON report', { reportId, reportPath });
+          const jsonContent = await fs.readFile(reportPath, 'utf8');
+          const reportData = JSON.parse(jsonContent) as Report;
+          const pdfPath = await pdfGeneratorService.generatePdf(reportData, {});
+          const pdfBuf = await fs.readFile(pdfPath);
+          const disposition = req.query.inline === 'true' ? 'inline' : 'attachment';
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `${disposition}; filename="${reportData.projectName || projectName}-security-report.pdf"`);
+          res.send(pdfBuf);
+          return;
+        } catch (pdfErr) {
+          logger.error('On-demand PDF generation from JSON failed', { error: pdfErr, reportId });
+          res.status(500).json({ error: 'Failed to generate PDF from JSON report', reportId });
+          return;
+        }
       }
 
       if (memoryReport && (memoryReport.status === 'pending' || memoryReport.status === 'processing')) {
@@ -1645,9 +1657,111 @@ export class ReportController {
   };
 
   /**
+   * GET /api/reports/:reportId/view
+   * Serves the HTML snapshot of the report directly in the browser (no Puppeteer needed).
+   * Falls back to an inline-rendered HTML page when the .html file is missing.
+   */
+  viewReportHtml = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { reportId } = req.params;
+
+      // 1. Try to serve the pre-generated HTML snapshot
+      const htmlPath = path.join(this.tempDir, `report-${reportId}.html`);
+      try {
+        await fs.access(htmlPath);
+        const html = await fs.readFile(htmlPath, 'utf8');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(html);
+        return;
+      } catch {
+        // HTML file not found — fall through to rebuild from data
+      }
+
+      // 2. Try to reconstruct from memory store
+      let report: Report | null = reportsStore.get(reportId) || null;
+
+      // 3. Try MongoDB
+      if (!report) {
+        if (!mongoClient.isConnected()) await mongoClient.connect();
+        const doc = await mongoClient.getReportById(reportId);
+        if (doc) {
+          const filePath: string = doc.path || doc.report_path || '';
+          if (filePath && filePath.endsWith('.json')) {
+            try {
+              const jsonContent = await fs.readFile(filePath, 'utf8');
+              report = JSON.parse(jsonContent) as Report;
+            } catch {
+              // Can't read JSON file
+            }
+          }
+        }
+      }
+
+      if (!report) {
+        res.status(404).send('<h1>Report not found</h1>');
+        return;
+      }
+
+      // 4. Regenerate the HTML using the Handlebars template
+      const templateName = 'security_report';
+      const templateCandidates = [
+        path.join(__dirname, '..', 'templates', `${templateName}.html`),
+        path.join(process.cwd(), 'src', 'templates', `${templateName}.html`)
+      ];
+      const cssCandidates = [
+        path.join(__dirname, '..', 'templates', 'assets', 'css', 'security_report.css'),
+        path.join(process.cwd(), 'src', 'templates', 'assets', 'css', 'security_report.css')
+      ];
+
+      let templatePath: string | null = null;
+      for (const p of templateCandidates) {
+        try { await fs.access(p); templatePath = p; break; } catch { /* continue */ }
+      }
+
+      let cssContent = '';
+      for (const c of cssCandidates) {
+        try { cssContent = await fs.readFile(c, 'utf8'); break; } catch { /* continue */ }
+      }
+
+      if (!templatePath) {
+        res.status(500).send('<h1>Report template not found</h1>');
+        return;
+      }
+
+      const Handlebars = require('handlebars');
+      const tplRaw = await fs.readFile(templatePath, 'utf8');
+      const tpl = Handlebars.compile(tplRaw);
+
+      const data = {
+        projectName: report.projectName || reportId,
+        generatedAt: report.generatedAt || new Date().toISOString(),
+        metrics: report.metrics || {},
+        vulnerabilities: report.vulnerabilities || [],
+        services: report.services || {},
+        riskLevel: (report.metrics?.securityScore != null && report.metrics.securityScore < 50) ? 'High' : 'Medium',
+        inlineStyle: cssContent ? `<style>${cssContent}</style>` : '',
+        cssUrl: undefined,
+      };
+
+      const html = tpl(data);
+      // Cache the freshly generated HTML for future requests
+      await fs.writeFile(htmlPath, html, 'utf8').catch(() => { /* non-fatal */ });
+
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+
+    } catch (error) {
+      logger.error('Failed to view report HTML', { error });
+      next(error);
+    }
+  };
+
+
+  /**
    * GET /api/reports/:reportId/vulnerabilities
    * Récupère la liste des vulnérabilités d'un rapport
    */
+
   getVulnerabilities = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { reportId } = req.params;
@@ -1757,14 +1871,14 @@ export class ReportController {
       const reports = docs.map(doc => ({
         reportId: doc.report_id,
         // Project name might be missing in DB save, fallback or fetch scan
-        projectName: doc.project_name || doc.scan_id || 'Report Security',
-        status: doc.status,
-        format: doc.report_format,
-        generatedAt: doc.created_at,
+        projectName: doc.project_name || doc.projectName || doc.scan_id || 'Report Security',
+        status: doc.status || 'completed',
+        format: doc.format || doc.report_format || 'json',
+        generatedAt: doc.created_at || doc.updated_at || new Date().toISOString(),
         scanId: doc.scan_id,
         metrics: {
-          total: doc.vulnerabilities_count || 0,
-          securityScore: 0 // Not persisted currently
+          total: doc.vulnerabilities_count || doc.summary?.total || 0,
+          securityScore: doc.summary?.securityScore || 0
         }
       }));
 

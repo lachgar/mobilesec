@@ -191,83 +191,155 @@ const ScanDetail = () => {
     };
 
     if (loading && !scanData) return <LoadingSpinner />;
-    if (!loading && !scanData) return <div className="text-red-500 text-center mt-10">Scan not found.</div>;
+    if (!loading && !scanData) return (
+        <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+            <svg className="w-12 h-12 mb-4 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm font-medium">Scan not found.</p>
+            <Link to="/scans" className="mt-4 text-xs text-indigo-500 hover:text-indigo-400 underline underline-offset-2">← Back to scans</Link>
+        </div>
+    );
 
     const tabs = [
-        { id: 'static', label: 'Static Analysis', icon: '📦' },
-        { id: 'secrets', label: 'Secrets', icon: '🔑' },
-        { id: 'network', label: 'Network', icon: '🌐' },
-        { id: 'crypto', label: 'Cryptography', icon: '🔐' },
+        { 
+            id: 'static', 
+            label: 'Static Analysis',
+            icon: (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+            )
+        },
+        { 
+            id: 'secrets', 
+            label: 'Secrets',
+            icon: (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+            )
+        },
+        { 
+            id: 'network', 
+            label: 'Network',
+            icon: (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9-9c1.657 0 3 4.03 3 9s-1.343 9-3 9m0-18c-1.657 0-3 4.03-3 9s1.343 9 3 9m-9-9a9 9 0 019-9" />
+                </svg>
+            )
+        },
+        { 
+            id: 'crypto', 
+            label: 'Cryptography',
+            icon: (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+            )
+        },
     ];
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center">
-                <div>
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-bold text-white">{scanData.file_name || 'Unknown.apk'}</h2>
-                        <Badge type={getStatusColor(scanData.status)}>{scanData.status}</Badge>
-                        {scanData.status === 'in_progress' && <span className="text-xs text-yellow-500 animate-pulse">Analyzing...</span>}
-                    </div>
-                    <p className="text-slate-400 mt-1 text-sm">
-                        Scanned on {formatDate(scanData.timestamp || scanData.started_at)} • ID: <span className="font-mono text-slate-500">{id}</span>
-                    </p>
-                </div>
+            {/* Header card */}
+            <div className="glass-card rounded-2xl overflow-hidden">
+                {/* Top accent stripe */}
+                <div className="h-1 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
 
-                <div className="mt-4 md:mt-0 flex gap-3">
-                    <button
-                        onClick={() => window.print()}
-                        className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition text-sm"
-                    >
-                        🖨️ Print Report
-                    </button>
-                    <Link
-                        to={`/scans/${id}/suggestions`}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition text-sm font-medium flex items-center gap-2"
-                    >
-                        ✨ AI Suggestions
-                    </Link>
-                    {/* Placeholder for PDF Download which implies calling ReportGen */}
-                    <button
-                        onClick={handleDownloadReport}
-                        disabled={downloading}
-                        className={`bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition text-sm font-medium flex items-center gap-2 ${downloading ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    >
-                        {downloading ? (
-                            <>
-                                <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                Generating...
-                            </>
-                        ) : (
-                            <>
-                                ⬇️ Download PDF
-                            </>
-                        )}
-                    </button>
+                <div className="p-6 flex flex-row justify-between items-center gap-4">
+                    <div className="flex items-center gap-4">
+                        {/* App icon placeholder */}
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/20 dark:border-indigo-500/10 flex items-center justify-center flex-shrink-0">
+                            <svg className="w-6 h-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+
+                        <div>
+                            <div className="flex items-center gap-3">
+                                <h2 className="text-xl font-bold text-slate-950 dark:text-white tracking-tight">
+                                    {scanData.file_name || 'Unknown.apk'}
+                                </h2>
+                                <Badge type={getStatusColor(scanData.status)}>{scanData.status}</Badge>
+                                {scanData.status === 'in_progress' && (
+                                    <span className="flex items-center gap-1.5 text-xs text-amber-500 font-semibold">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                                        Analyzing...
+                                    </span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-4 mt-1">
+                                <span className="text-xs text-slate-500">{formatDate(scanData.timestamp || scanData.started_at)}</span>
+                                <span className="text-xs text-slate-500 font-mono">{id.slice(0, 8)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 flex-shrink-0 print:hidden">
+                        {/* Print */}
+                        <button
+                            onClick={() => window.print()}
+                            className="inline-flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-150 active:scale-[0.97] text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700/60"
+                        >
+                            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            Print
+                        </button>
+                        {/* AI Suggestions */}
+                        <Link
+                            to={`/scans/${id}/suggestions`}
+                            className="inline-flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-150 active:scale-[0.97] text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-md shadow-violet-500/20 hover:shadow-violet-500/30"
+                        >
+                            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            AI Suggestions
+                        </Link>
+                        {/* Download PDF */}
+                        <button
+                            onClick={handleDownloadReport}
+                            disabled={downloading}
+                            className={`inline-flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-150 active:scale-[0.97] text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/30 ${downloading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        >
+                            {downloading ? (
+                                <>
+                                    <span className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full flex-shrink-0" />
+                                    Generating...
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Download PDF
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Tabs Navigation */}
-            <div className="border-b border-slate-800">
-                <nav className="-mb-px flex space-x-8">
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`
-                                py-4 px-1 border-b-2 font-medium text-sm flex items-center
-                                ${activeTab === tab.id
-                                    ? 'border-green-500 text-green-500'
-                                    : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-700'
-                                }
-                            `}
-                        >
-                            <span className="mr-2">{tab.icon}</span>
-                            {tab.label}
-                        </button>
-                    ))}
-                </nav>
+            <div className="glass-card rounded-2xl p-1.5 flex gap-1 overflow-x-auto scrollbar-none print:hidden">
+                {tabs.map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`
+                            flex-1 min-w-max flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs tracking-wide transition-all duration-200 whitespace-nowrap
+                            ${activeTab === tab.id
+                                ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-white shadow-sm border border-slate-200/80 dark:border-slate-700/50'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50'
+                            }
+                        `}
+                    >
+                        {tab.icon}
+                        {tab.label}
+                    </button>
+                ))}
             </div>
 
             {/* Tab Content */}
@@ -275,23 +347,33 @@ const ScanDetail = () => {
                 {activeTab === 'static' && <StaticAnalysis data={results.static} />}
                 {activeTab === 'secrets' && (
                     results.secrets ? <SecretsAnalysis data={results.secrets} /> :
-                        <div className="p-8 text-center text-slate-500">
-                            {scanData.status === 'in_progress' ? 'Scanning for secrets...' : 'Waiting for SecretHunter results...'}
+                        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                            <div className="w-10 h-10 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-4" />
+                            <p className="text-sm font-medium">{scanData.status === 'in_progress' ? 'Scanning for secrets...' : 'Waiting for SecretHunter results...'}</p>
                         </div>
                 )}
                 {activeTab === 'network' && (
                     results.network ? <NetworkAnalysis data={results.network} /> :
-                        <div className="p-8 text-center text-slate-500">
-                            {scanData.status === 'in_progress' ? 'Analyzing network traffic (approx 60s)...' : 'Waiting for NetworkInspector results...'}
+                        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                            <div className="w-10 h-10 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-4" />
+                            <p className="text-sm font-medium">{scanData.status === 'in_progress' ? 'Analyzing network traffic (~60s)...' : 'Waiting for NetworkInspector results...'}</p>
                         </div>
                 )}
                 {activeTab === 'crypto' && (
                     results.crypto ? <CryptoAnalysis data={results.crypto} /> :
-                        <div className="p-8 text-center text-slate-500">
+                        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
                             {errors.crypto ? (
-                                <span className="text-red-400">Error: {errors.crypto} (Check Console)</span>
+                                <div className="flex items-center gap-2 text-rose-500 text-sm">
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    Error: {errors.crypto}
+                                </div>
                             ) : (
-                                scanData.status === 'in_progress' ? 'Analyzing cryptography...' : 'Waiting for CryptoCheck results...'
+                                <>
+                                    <div className="w-10 h-10 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-4" />
+                                    <p className="text-sm font-medium">{scanData.status === 'in_progress' ? 'Analyzing cryptography...' : 'Waiting for CryptoCheck results...'}</p>
+                                </>
                             )}
                         </div>
                 )}
@@ -301,3 +383,4 @@ const ScanDetail = () => {
 };
 
 export default ScanDetail;
+

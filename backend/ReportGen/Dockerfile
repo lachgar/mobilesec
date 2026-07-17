@@ -1,20 +1,18 @@
 # syntax=docker/dockerfile:1.4
 # ReportGen Dockerfile (Debian-based for Puppeteer compatibility)
+
 # Builder stage (with dev deps to compile TypeScript)
 FROM node:18-bullseye-slim AS builder
 WORKDIR /app
-COPY package.json ./
-RUN npm install
-# Force Puppeteer to download Chromium at build time so runtime has browser available
-RUN node -e "try { require('puppeteer'); console.log('puppeteer OK'); } catch (e) { console.error('puppeteer install check failed', e); process.exit(0); }"
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
 RUN npm run build
 
 # Runtime stage
 FROM node:18-bullseye-slim
 
-# Install dependencies required by Chromium/Puppeteer. Debian mirrors can drop
-# large installs on slow links, so retry the install without discarding downloads.
+# Install dependencies required by Chromium/Puppeteer + Chromium itself
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
   set -eux; \
@@ -39,6 +37,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       libgbm1 \
       libpangocairo-1.0-0 \
       fonts-noto-color-emoji \
+      chromium \
       wget \
       gnupg \
       && break; \
@@ -51,8 +50,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 WORKDIR /app
 
 # Copy only production deps
-COPY package.json ./
-RUN npm install --only=production
+COPY package.json package-lock.json ./
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+RUN npm ci --omit=dev
 
 # Copy built artifacts and templates from builder
 COPY --from=builder /app/dist ./dist
@@ -60,19 +60,14 @@ COPY --from=builder /app/src/templates ./src/templates
 COPY --from=builder /app/src/templates/assets ./src/templates/assets
 COPY --from=builder /app/package.json ./package.json
 
-# Copy Puppeteer's downloaded Chromium from builder to a path accessible by the runtime 'node' user
-COPY --from=builder /root/.cache/puppeteer /home/node/.cache/puppeteer
-RUN chown -R node:node /home/node/.cache/puppeteer || true
-
-# Create tmp and reports directories
+# Create tmp and reports directories (owned by node user)
 RUN mkdir -p /app/tmp /app/reports && chown -R node:node /app/tmp /app/reports
 
-# Use non-root user
-# Keep default user (root) so we can chown mounted volumes at startup
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
-ENV PUPPETEER_CACHE_DIR=/home/node/.cache/puppeteer
+# Puppeteer: skip bundled Chromium download - use system chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PORT=3005
 EXPOSE ${PORT}
 
-# On container start: ensure mounted volumes are writable by the 'node' user, then drop privileges to run as 'node'
-CMD ["sh", "-c", "chown -R node:node /app/tmp /app/reports 2>/dev/null || true; su node -c 'node dist/app.js'"]
+USER node
+CMD ["node", "dist/app.js"]

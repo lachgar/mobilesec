@@ -30,9 +30,47 @@ class MongoDBClient {
   async saveReport(scanId: string, payload: any) {
     await this.connect();
     const coll = this.db.collection('reports');
-    const query = payload.reportId ? { report_id: payload.reportId } : { scan_id: scanId };
-    const update = { $set: { ...payload, scan_id: scanId, updated_at: new Date() } };
-    await coll.updateOne(query, update, { upsert: true });
+
+    // Always upsert by report_id (unique per generation) to avoid duplicate key errors
+    // on the scan_id_1 index when a scan has multiple report generations.
+    if (payload.reportId) {
+      const doc = {
+        ...payload,
+        report_id: payload.reportId,
+        scan_id: scanId,
+        updated_at: new Date(),
+      };
+      await coll.updateOne(
+        { report_id: payload.reportId },
+        {
+          $set: doc,
+          $setOnInsert: { created_at: new Date() },
+        },
+        { upsert: true }
+      );
+    } else {
+      // No reportId — fall back to upsert by scan_id, update only (no insert if conflict)
+      try {
+        await coll.updateOne(
+          { scan_id: scanId },
+          {
+            $set: { ...payload, scan_id: scanId, updated_at: new Date() },
+            $setOnInsert: { created_at: new Date() },
+          },
+          { upsert: true }
+        );
+      } catch (err: any) {
+        // If duplicate key on scan_id, try updateOne without upsert to update the existing doc
+        if (err && err.code === 11000) {
+          await coll.updateOne(
+            { scan_id: scanId },
+            { $set: { ...payload, scan_id: scanId, updated_at: new Date() } }
+          );
+        } else {
+          throw err;
+        }
+      }
+    }
     return true;
   }
 

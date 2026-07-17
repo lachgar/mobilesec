@@ -48,48 +48,60 @@ const Scans = () => {
     if (error) return <div className="text-red-500 p-4">{error}</div>;
 
     return (
-        <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{t('scan_history')}</h2>
+        <div className="space-y-8">
+            <div className="pb-5 border-b border-slate-200/50 dark:border-slate-800/40">
+                <h2 className="text-2xl font-bold tracking-tight text-slate-955 dark:text-white">{t('scan_history')}</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-450 mt-1">Review and manage decompiled security scans.</p>
+            </div>
 
             <Card>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                <div className="overflow-x-auto rounded-xl border border-slate-200/50 dark:border-slate-800/40">
+                    <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 text-sm">
-                                <th className="pb-3 pl-2">{t('filename')}</th>
-                                <th className="pb-3">Size</th>
-                                <th className="pb-3">{t('date')}</th>
-                                <th className="pb-3">{t('status')}</th>
-                                <th className="pb-3">{t('actions')}</th>
+                            <tr className="bg-slate-100/50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 text-xs uppercase tracking-wider">
+                                <th className="py-4 px-4 font-bold">{t('filename')}</th>
+                                <th className="py-4 px-4 font-bold">Size</th>
+                                <th className="py-4 px-4 font-bold">{t('date')}</th>
+                                <th className="py-4 px-4 font-bold">{t('status')}</th>
+                                <th className="py-4 px-4 font-bold text-right">{t('actions')}</th>
                             </tr>
                         </thead>
-                        <tbody className="text-slate-600 dark:text-slate-300">
+                        <tbody className="text-slate-650 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-800/40">
                             {scans.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="text-center py-8 text-slate-500">{t('no_scans')}</td>
+                                    <td colSpan="5" className="text-center py-8 text-slate-400 dark:text-slate-505 text-sm italic">{t('no_scans')}</td>
                                 </tr>
                             ) : (
                                 scans.map((scan) => (
-                                    <tr key={scan.scan_id} className="border-b border-slate-200 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
-                                        <td className="py-4 pl-2 font-medium text-slate-800 dark:text-white max-w-xs sm:max-w-md">
-                                            <div className="flex items-center">
-                                                <span className="mr-3 text-xl flex-shrink-0">📱</span>
-                                                <span className="truncate" title={scan.results?.apk_name || scan.results?.file_name || scan.app_name}>
+                                    <tr key={scan.scan_id} className="hover:bg-slate-100/30 dark:hover:bg-slate-800/10 transition duration-150">
+                                        <td className="py-4 px-4 font-semibold text-slate-900 dark:text-white max-w-xs sm:max-w-md">
+                                            <div className="flex items-center gap-3">
+                                                <svg className="w-4 h-4 text-indigo-500/70 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                </svg>
+                                                <span className="truncate text-sm" title={scan.results?.apk_name || scan.results?.file_name || scan.app_name}>
                                                     {scan.results?.apk_name || scan.results?.file_name || scan.app_name || 'Unknown.apk'}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="py-4 font-mono text-sm whitespace-nowrap">{formatBytes(scan.results?.file_size || 0)}</td>
-                                        <td className="py-4 whitespace-nowrap">{formatDate(scan.created_at || scan.results?.scan_timestamp || scan.timestamp)}</td>
-                                        <td className="py-4 whitespace-nowrap">
+                                        <td className="py-4 px-4 font-mono text-xs text-slate-500 dark:text-slate-450 whitespace-nowrap">
+                                            {formatBytes(scan.results?.file_size || 0)}
+                                        </td>
+                                        <td className="py-4 px-4 text-xs whitespace-nowrap text-slate-500 dark:text-slate-455">
+                                            {formatDate(scan.created_at || scan.results?.scan_timestamp || scan.timestamp)}
+                                        </td>
+                                        <td className="py-4 px-4 whitespace-nowrap">
                                             <Badge type={getStatusColor(scan.status)}>{scan.status}</Badge>
                                         </td>
-                                        <td className="py-4 whitespace-nowrap">
+                                        <td className="py-4 px-4 text-right whitespace-nowrap">
                                             <Link
                                                 to={`/scans/${scan.scan_id}`}
-                                                className="bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-white px-3 py-1.5 rounded-md text-sm transition"
+                                                className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-white font-bold px-3 py-1.5 rounded-lg text-xs transition active:scale-[0.96] border border-slate-200/40 dark:border-slate-750"
                                             >
                                                 {t('view_details')}
+                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                                </svg>
                                             </Link>
                                         </td>
                                     </tr>

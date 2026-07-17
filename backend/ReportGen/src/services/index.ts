@@ -259,7 +259,9 @@ export const pdfGeneratorService = {
         vulnerabilities: report.vulnerabilities || [],
         services: normalizedServices,
         riskLevel: (report.metrics && report.metrics.securityScore && report.metrics.securityScore < 50) ? 'High' : 'Medium',
+        // Inline CSS as a style block to avoid file:// cross-origin issues in Puppeteer/Docker
         cssUrl: cssPath ? `file://${cssPath}` : undefined,
+        inlineStyle: cssPath ? `<style>${await fs.readFile(cssPath, 'utf8').catch(() => '')}</style>` : '',
       };
 
       logger.info('Using template and css', { templatePath, cssPath, servicesCount: Object.keys(normalizedServices).length });
@@ -271,7 +273,16 @@ export const pdfGeneratorService = {
       logger.info('Rendering PDF via Puppeteer', { htmlPath, out });
 
       const launchOptions: any = {
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        headless: 'new',
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process',
+        ]
       };
 
       // If PUPPETEER_EXECUTABLE_PATH is set, use it

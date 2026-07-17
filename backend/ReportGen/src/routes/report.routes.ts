@@ -300,6 +300,31 @@ router.get('/:reportId/download', reportController.downloadReport);
 
 /**
  * @swagger
+ * /api/reports/{reportId}/view:
+ *   get:
+ *     summary: Affiche le rapport HTML directement dans le navigateur (sans Puppeteer)
+ *     tags: [Reports]
+ *     parameters:
+ *       - in: path
+ *         name: reportId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: HTML report page
+ *         content:
+ *           text/html:
+ *             schema:
+ *               type: string
+ *       404:
+ *         description: Rapport non trouvé
+ */
+router.get('/:reportId/view', reportController.viewReportHtml);
+
+
+/**
+ * @swagger
  * /api/reports/{reportId}/vulnerabilities:
  *   get:
  *     summary: Récupère les vulnérabilités d'un rapport avec pagination

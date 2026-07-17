@@ -23,10 +23,11 @@ const reportGenService = {
         return `${BASE_URL}/${reportId}/download`;
     },
 
-    // View URL helper (inline)
+    // View URL helper (HTML — served without Puppeteer)
     getViewUrl: (reportId) => {
-        return `${BASE_URL}/${reportId}/download?inline=true`;
+        return `${BASE_URL}/${reportId}/view`;
     },
+
 
     // List all reports
     getAllReports: async (page = 1, limit = 10) => {

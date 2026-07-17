@@ -8,6 +8,7 @@ export const useSettings = () => useContext(SettingsContext);
 const translations = {
     en: {
         dashboard: "Dashboard",
+        reports: "Reports",
         new_scan: "New Scan",
         scan_history: "Scan History",
         settings: "Settings",
@@ -41,6 +42,7 @@ const translations = {
     },
     fr: {
         dashboard: "Tableau de bord",
+        reports: "Rapports",
         new_scan: "Nouveau Scan",
         scan_history: "Historique",
         settings: "Paramètres",
@@ -76,7 +78,7 @@ const translations = {
 
 export const SettingsProvider = ({ children }) => {
     // Initialize from localStorage or default
-    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
     const [language, setLanguage] = useState(localStorage.getItem('language') || 'en');
 
     // Apply theme class to html element

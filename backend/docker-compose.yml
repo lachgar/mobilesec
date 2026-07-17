@@ -70,9 +70,9 @@ services:
           - mongo
     restart: unless-stopped
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      test: mongosh localhost:27017/admin --username admin --password securityplatform2024 --eval 'db.runCommand("ping").ok' --quiet
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 5
       start_period: 30s
 
@@ -224,6 +224,7 @@ services:
       - MONGODB_URI=mongodb://admin:securityplatform2024@mongodb:27017/security_platform?authSource=admin
       - MONGODB_DATABASE=security_platform
       - KAFKA_BROKERS=kafka:9092
+      - KAFKAJS_NO_PARTITIONER_WARNING=1
     volumes:
       - reportgen-data:/app/tmp
       - reportgen-reports:/app/reports
@@ -234,11 +235,13 @@ services:
       test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3005/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))" ]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 10s
+      retries: 5
+      start_period: 60s
     depends_on:
       mongodb:
         condition: service_healthy
+      kafka:
+        condition: service_started
 
   # ---------------------------------------------------------------------------
   # APK Scanner - Extraction et analyse statique APK
@@ -470,11 +473,31 @@ services:
       test: [ "CMD", "curl", "-f", "http://localhost:8001/health" ]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 30s
+      retries: 5
+      start_period: 180s
     depends_on:
       mongodb:
         condition: service_healthy
+
+# =============================================================================
+# Frontend - React App (Light Mode, served by nginx)
+# =============================================================================
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3006:3006"
+    networks:
+      - security-network
+    restart: unless-stopped
+    depends_on:
+      - ci-connector
+      - apk-scanner
+      - fixsuggest
+      - reportgen
+      - ml-model
 
 # =============================================================================
 # Réseaux

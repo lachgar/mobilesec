@@ -5,7 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Report Security{{#if projectName}} - {{projectName}}{{/if}}</title>
-  <link rel="stylesheet" href="{{cssUrl}}">
+  {{{inlineStyle}}}
+  {{#if cssUrl}}<link rel="stylesheet" href="{{cssUrl}}">{{/if}}
 </head>
 
 <body>
@@ -73,6 +74,15 @@
   <footer>
     <div class="footer-right">Page <span class="pageNumber"></span> / <span class="totalPages"></span></div>
   </footer>
+  <script>
+    if (new URLSearchParams(window.location.search).get('print') === 'true') {
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          window.print();
+        }, 500);
+      });
+    }
+  </script>
 </body>
 
 </html>
